@@ -157,7 +157,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    data.status = data.status || "untouched"; // Assign default value if undefined
+    data.status = (data.status as Lead["status"]) || "untouched"; // Assign default value if undefined
 
     const { data: newLead, error } = await leadsService.createLead(data);
 
