@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,11 +13,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadSettings()
-  }, [])
-
-  const loadSettings = async () => {
+  // Define loadSettings using useCallback to ensure stability across renders
+  const loadSettings = useCallback(async () => {
     try {
       const settings = await settingsService.getAutomationSettings()
       setSettings(settings)
@@ -28,7 +25,12 @@ export default function SettingsPage() {
         variant: "destructive",
       })
     }
-  }
+  }, [toast]) // Make sure toast is included as a dependency
+
+  // Load settings on initial render
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings]) // Add loadSettings as a dependency
 
   const updateSettings = async () => {
     if (!settings) return
@@ -66,7 +68,7 @@ export default function SettingsPage() {
 
     const input = e.target
     const value = input.value.trim()
-    
+
     // If empty, revert to the current setting value
     if (value === '') {
       input.value = settings[field].toString()
