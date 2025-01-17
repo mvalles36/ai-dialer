@@ -50,31 +50,28 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   const [totalRecords, setTotalRecords] = useState(initialLeads.length);
   const { toast } = useToast();
 
-  // Initialize hooks
   const { sortState, handleSort, getSortedLeads } = useLeadSort();
   const sortedLeads = getSortedLeads(rawLeads);
-  const { csvPreviewData, showCSVPreview, fileInputRef, handleFileUpload, handleCSVImport, setShowCSVPreview } = useCSVImport(() => fetchLeads(false));
+  const {
+    csvPreviewData,
+    showCSVPreview,
+    fileInputRef,
+    handleFileUpload,
+    handleCSVImport,
+    setShowCSVPreview,
+  } = useCSVImport(() => fetchLeads(false));
   const { pageSize, setPageSize } = usePageSize();
 
   const fetchLeads = async (showSuccessToast = false, forceRefresh = false) => {
-    console.log('fetchLeads called:', {
-      currentPage,
-      pageSize,
-      hasSort: !!sortState.column,
-      forceRefresh
-    });
-
     if (!forceRefresh && currentPage === 1 && rawLeads === initialLeads && !sortState.column) {
-      console.log('Skipping fetch - using initial data');
       return;
     }
 
     try {
       const { data, error, count } = await leadsService.getLeads({
-        sortBy: sortState.column ? {
-          column: sortState.column,
-          ascending: sortState.direction === 'asc'
-        } : undefined,
+        sortBy: sortState.column
+          ? { column: sortState.column, ascending: sortState.direction === "asc" }
+          : undefined,
         page: currentPage,
         pageSize,
       });
@@ -118,13 +115,10 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     debounce(async () => {
       const { data: updatedLeads, error, count } = await leadsService.getLeads({
         sortBy: sortState.column
-          ? {
-              column: sortState.column,
-              ascending: sortState.direction === "asc",
-            }
+          ? { column: sortState.column, ascending: sortState.direction === "asc" }
           : undefined,
         page: currentPage,
-        pageSize: pageSize,
+        pageSize,
       });
 
       if (error) {
@@ -148,34 +142,8 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
 
   useEffect(() => {
     const subscription = supabase
-      .channel('leads-table-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'leads',
-        },
-        handleDatabaseChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'leads',
-        },
-        handleDatabaseChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'leads',
-        },
-        handleDatabaseChange
-      )
+      .channel("leads-table-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, handleDatabaseChange)
       .subscribe();
 
     return () => {
@@ -188,39 +156,38 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     fetchLeads(true, true);
   };
 
-  const handleUpdateLead = async (id: string, updates: Partial<Lead>) => {
-    const { success, data, error } = await leadsService.updateLead(id, updates);
-    if (!success || !data) {
-      console.error("Error updating lead:", error);
+  const handleAddLead = async (data: Partial<Lead>) => {
+    if (!data.status) {
+      data.status = "pending"; // Default value if status is undefined
+    }
+
+    const { data: newLead, error } = await leadsService.createLead(data);
+
+    if (error) {
       toast({
         title: "Error",
-        description: "Failed to update lead. Please try again.",
+        description: "Failed to add lead. Please try again.",
         variant: "destructive",
       });
-      return false;
+      return;
     }
-    
-    setRawLeads(prevLeads => 
-      prevLeads.map(lead => lead.id === id ? {
-        ...lead, 
-        ...data,
-        ...Object.fromEntries(
-          Object.entries(data).filter(([_, v]) => v !== undefined)
-        )
-      } : lead)
-    );
-    
-    return true;
+
+    if (newLead) {
+      setRawLeads([newLead, ...rawLeads]);
+      setIsAddingLead(false);
+      toast({
+        title: "Success",
+        description: "Lead added successfully.",
+        variant: "success",
+      });
+    }
   };
 
   const handleDeleteLeads = async () => {
-    const results = await Promise.all(
-      selectedLeads.map((id) => leadsService.deleteLead(id))
-    );
+    const results = await Promise.all(selectedLeads.map((id) => leadsService.deleteLead(id)));
 
     const errors = results.filter((r) => !r.success);
     if (errors.length > 0) {
-      console.error("Error deleting leads:", errors);
       toast({
         title: "Error",
         description: `Failed to delete ${errors.length} leads. Please try again.`,
@@ -238,31 +205,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     setSelectedLeads([]);
     fetchLeads();
   };
-
-  const handleAddLead = async (data: Partial<Lead>) => {
-  const { data: newLead, error } = await leadsService.createLead(data);
-
-  if (error) {
-    console.error("Error adding lead:", error);
-    toast({
-      title: "Error",
-      description: "Failed to add lead. Please try again.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  if (newLead) {
-    setRawLeads([newLead, ...rawLeads]);
-    setIsAddingLead(false);
-    toast({
-      title: "Success",
-      description: "Lead added successfully.",
-      variant: "success",
-    });
-  }
-};
-
 
   const handleBulkStatusUpdate = async (status: Lead["status"]) => {
     const { success, data, error } = await leadsService.updateLeadStatus(selectedLeads, status);
@@ -325,30 +267,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
       <LeadFormDialog
         isOpen={isAddingLead}
         onClose={() => setIsAddingLead(false)}
-        onSubmit={handleAddLead}
-      />
-      
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the selected leads?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteLeads}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Pagination
-        currentPage={currentPage}
-        totalRecords={totalRecords}
-        onPageChange={setCurrentPage}
-        pageSize={pageSize}
-        onPageSizeChange={setPageSize}
+        onSave={handleAddLead}
       />
     </div>
   );
