@@ -157,9 +157,13 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    data.status = (data.status as Lead["status"]) || "untouched"; // Assign default value if undefined
+    // Create a new object with the required status field
+    const leadData = {
+      ...data,
+      status: data.status ?? "untouched" as const,
+    };
 
-    const { data: newLead, error } = await leadsService.createLead(data);
+    const { data: newLead, error } = await leadsService.createLead(leadData);
 
     if (error) {
       toast({
@@ -231,6 +235,47 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
           <RefreshCw size={16} className="mr-2" />
           Refresh Leads
         </Button>
+        
+        {selectedLeads.length > 0 && (
+          <>
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              Delete Selected ({selectedLeads.length})
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Update Status ({selectedLeads.length})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Choose Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("pending")}>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("calling")}>
+                  Calling
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("no_answer")}>
+                  No Answer
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("scheduled")}>
+                  Scheduled
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("not_interested")}>
+                  Not Interested
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("error")}>
+                  Error
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
       </div>
 
       <Table>
@@ -252,6 +297,29 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
           setIsAddingLead={setIsAddingLead}
         />
       </Table>
+
+      <Pagination
+        currentPage={currentPage}
+        totalRecords={totalRecords}
+        pageSize={pageSize}
+        setCurrentPage={setCurrentPage}
+        setPageSize={setPageSize}
+      />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedLeads.length} selected leads.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLeads}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CSVPreviewDialog
         isOpen={showCSVPreview}
