@@ -240,24 +240,29 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    const { success, data: newLead, error } = await leadsService.createLead(data);
-    if (success && newLead) {
-      setRawLeads([newLead, ...rawLeads]);
-      setIsAddingLead(false);
-      toast({
-        title: "Success",
-        description: "Lead added successfully.",
-        variant: "success",
-      });
-    } else {
-      console.error("Error adding lead:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add lead. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  const { data: newLead, error } = await leadsService.createLead(data);
+
+  if (error) {
+    console.error("Error adding lead:", error);
+    toast({
+      title: "Error",
+      description: "Failed to add lead. Please try again.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  if (newLead) {
+    setRawLeads([newLead, ...rawLeads]);
+    setIsAddingLead(false);
+    toast({
+      title: "Success",
+      description: "Lead added successfully.",
+      variant: "success",
+    });
+  }
+};
+
 
   const handleBulkStatusUpdate = async (status: Lead["status"]) => {
     const { success, data, error } = await leadsService.updateLeadStatus(selectedLeads, status);
