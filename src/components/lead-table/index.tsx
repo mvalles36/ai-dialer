@@ -157,11 +157,28 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    // Ensure the status is one of the valid enum values
+    // Validate required fields
+    if (!data.company_name || !data.contact_name || !data.phone || !data.email) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields: Company Name, Contact Name, Phone, and Email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create the lead data object with all required fields and defaults for optional fields
     const leadData = {
-      ...data,
-      status: data.status ?? "pending" as Lead["status"],
-    };
+      company_name: data.company_name,
+      contact_name: data.contact_name,
+      phone: data.phone,
+      email: data.email,
+      status: data.status ?? "pending" as const,
+      call_attempts: data.call_attempts ?? 0,
+      last_called: data.last_called ?? null,
+      notes: data.notes ?? "",
+      source: data.source ?? "manual",
+    } satisfies Omit<Lead, 'id' | 'created_at' | 'updated_at'>;
 
     const { data: newLead, error } = await leadsService.createLead(leadData);
 
