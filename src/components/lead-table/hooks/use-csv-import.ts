@@ -112,7 +112,7 @@ export function useCSVImport(onLeadsUpdate: () => void) {
   const handleCSVImport = async (data: CSVPreviewData[]) => {
     const newLeads = data.map((row) => ({
       ...row,
-      status: "pending" as const,
+      status: "untouched" as const,
       call_attempts: 0,
       last_called_at: null,
       created_at: new Date().toISOString(),
