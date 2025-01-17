@@ -6,11 +6,11 @@ const serviceClient = createServiceClient()
 const leadsService = new LeadsService(serviceClient)
 
 export async function DELETE(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
-    const { id } = context.params
+    const { id } = await params
     
     const { success, error } = await leadsService.deleteLead(id)
 
