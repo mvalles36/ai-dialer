@@ -240,38 +240,22 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    const newLead = {
-      company_name: data.company_name || '',
-      contact_name: data.contact_name || data.company_name || 'Unknown Contact',
-      phone: data.phone || '',
-      email: data.email || '',
-      timezone: data.timezone || 'America/Los_Angeles',
-      ...data,
-      status: "pending" as const,
-      call_attempts: 0,
-      last_called_at: null,
-      cal_booking_uid: null,
-      follow_up_email_sent: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data: createdLead, error } = await leadsService.createLead(newLead);
-    if (error || !createdLead) {
-      console.error("Error creating lead:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create lead. Please try again.",
-        variant: "destructive",
-      });
-    } else {
+    const { success, data: newLead, error } = await leadsService.createLead(data);
+    if (success && newLead) {
+      setRawLeads([newLead, ...rawLeads]);
+      setIsAddingLead(false);
       toast({
         title: "Success",
-        description: "Lead created successfully.",
+        description: "Lead added successfully.",
         variant: "success",
       });
-      setIsAddingLead(false);
-      fetchLeads(false, true);
+    } else {
+      console.error("Error adding lead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add lead. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -295,53 +279,64 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     }
   };
 
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedLeads(e.target.checked ? rawLeads.map((lead) => lead.id) : []);
-  };
-
   return (
-    <div className="overflow-hidden">
-      <div className="flex justify-between items-center py-4">
+    <div>
+      <div className="flex items-center gap-3 mb-4">
         <Button onClick={handleManualRefresh} variant="outline">
-          <RefreshCw className="mr-2" /> Refresh Leads
+          <RefreshCw size={16} className="mr-2" />
+          Refresh Leads
         </Button>
-        {selectedLeads.length > 0 && (
-          <div className="flex items-center space-x-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">Bulk Actions</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Manage Selected</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("in_progress")}>
-                  Set to In Progress
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("completed")}>
-                  Set to Completed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-                  Delete Selected Leads
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
       </div>
 
       <Table>
         <LeadTableHeader
           selectedLeads={selectedLeads}
-          handleSelectAll={handleSelectAll}
+          setSelectedLeads={setSelectedLeads}
+          totalRecords={totalRecords}
+          onSortChange={handleSort}
           sortState={sortState}
-          onSort={handleSort}
         />
+
         <LeadTableBody
           leads={sortedLeads}
           selectedLeads={selectedLeads}
           setSelectedLeads={setSelectedLeads}
-          setEditingCell={setEditingCell}
+          handleUpdateLead={handleUpdateLead}
+          handleDeleteLeads={handleDeleteLeads}
+          FIELD_MAPPINGS={FIELD_MAPPINGS}
+          NON_EDITABLE_FIELDS={NON_EDITABLE_FIELDS}
+          isAddingLead={isAddingLead}
+          setIsAddingLead={setIsAddingLead}
         />
       </Table>
+
+      <CSVPreviewDialog
+        isOpen={showCSVPreview}
+        onClose={() => setShowCSVPreview(false)}
+        csvData={csvPreviewData}
+        onImport={handleCSVImport}
+      />
+
+      <LeadFormDialog
+        isOpen={isAddingLead}
+        onClose={() => setIsAddingLead(false)}
+        onSubmit={handleAddLead}
+      />
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the selected leads?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLeads}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Pagination
         currentPage={currentPage}
@@ -350,41 +345,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
       />
-
-      <CSVPreviewDialog
-        show={showCSVPreview}
-        onClose={() => setShowCSVPreview(false)}
-        previewData={csvPreviewData}
-        onConfirm={handleCSVImport}
-      />
-
-      <LeadFormDialog
-        isOpen={isAddingLead}
-        onClose={() => setIsAddingLead(false)}
-        onSubmit={handleAddLead}
-      />
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Leads</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the selected leads?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteLeads}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Confirm Deletion
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
