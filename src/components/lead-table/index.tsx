@@ -157,9 +157,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    if (!data.status) {
-      data.status = "pending"; // Default value if status is undefined
-    }
+    data.status = data.status || "untouched"; // Assign default value if undefined
 
     const { data: newLead, error } = await leadsService.createLead(data);
 
@@ -248,8 +246,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
           leads={sortedLeads}
           selectedLeads={selectedLeads}
           setSelectedLeads={setSelectedLeads}
-          handleUpdateLead={handleUpdateLead}
-          handleDeleteLeads={handleDeleteLeads}
           FIELD_MAPPINGS={FIELD_MAPPINGS}
           NON_EDITABLE_FIELDS={NON_EDITABLE_FIELDS}
           isAddingLead={isAddingLead}
