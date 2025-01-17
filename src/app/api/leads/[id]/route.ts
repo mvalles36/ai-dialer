@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 
-// PATCH handler
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = await createRouteHandlerClient()
 
-    const { id } = params  // Correctly access id from params
+    // Get id from params - properly awaited in Next.js 15
+    const { id } = params; // Direct access, no need for Promise.resolve()
     const updates = await request.json()
-
+    
     const { data, error } = await supabase
       .from('leads')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
+      .update({ 
+        ...updates, 
+        updated_at: new Date().toISOString() 
       })
       .eq('id', id)
       .select()
@@ -27,13 +27,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-// DELETE handler
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = await createRouteHandlerClient()
 
-    const { id } = params  // Correctly access id from params
-
+    // Accessing params directly
+    const { id } = params;
+    
     const { error } = await supabase
       .from('leads')
       .delete()
