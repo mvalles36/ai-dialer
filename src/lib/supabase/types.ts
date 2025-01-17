@@ -17,6 +17,7 @@ export interface Database {
           created_at: string
           updated_at: string
           notes?: string;
+          source?: string;
         }
         Insert: Omit<Database['public']['Tables']['leads']['Row'], 'id'>
         Update: Partial<Database['public']['Tables']['leads']['Row']>
