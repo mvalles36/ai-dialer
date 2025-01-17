@@ -119,7 +119,7 @@ export function useCSVImport(onLeadsUpdate: () => void) {
       updated_at: new Date().toISOString(),
       cal_booking_uid: null, // Add missing required property
       follow_up_email_sent: false, // Add missing required property
-      timezone: "America/Los_Angeles" // Default timezone
+      timezone: "America/Chicago" // Default timezone
     }));
 
     try {
