@@ -157,10 +157,10 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    // Create a new object with the required status field
+    // Ensure the status is one of the valid enum values
     const leadData = {
       ...data,
-      status: data.status ?? "untouched" as const,
+      status: data.status ?? "pending" as Lead["status"],
     };
 
     const { data: newLead, error } = await leadsService.createLead(leadData);
