@@ -1,49 +1,32 @@
-import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@/lib/supabase/server'
+import { NextResponse, NextRequest } from 'next/server'
+import { LeadsService } from '@/lib/services/leads'
+import { createServiceClient } from '@/lib/supabase/service'
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+const serviceClient = createServiceClient()
+const leadsService = new LeadsService(serviceClient)
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const supabase = await createRouteHandlerClient()
-
-    // Get id from params - properly awaited in Next.js 15
-    const { id } = params; // Direct access, no need for Promise.resolve()
-    const updates = await request.json()
+    const { id } = params
     
-    const { data, error } = await supabase
-      .from('leads')
-      .update({ 
-        ...updates, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .select()
+    const { success, error } = await leadsService.deleteLead(id)
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!success) {
+      return NextResponse.json(
+        { error: error || 'Failed to delete lead' },
+        { status: 500 }
+      )
     }
-    return NextResponse.json(data)
-  } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
-  }
-}
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const supabase = await createRouteHandlerClient()
-
-    // Accessing params directly
-    const { id } = params;
-    
-    const { error } = await supabase
-      .from('leads')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    return NextResponse.json({ message: 'Lead deleted successfully' })
-  } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting lead:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
