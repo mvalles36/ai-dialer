@@ -1,4 +1,5 @@
 import type { Lead } from "@/lib/supabase/types";
+import { Dispatch, SetStateAction } from "react"; // Import necessary types for state management
 
 export interface CSVPreviewData {
   company_name: string;
@@ -18,6 +19,11 @@ export interface CSVDialogProps {
 
 export interface LeadTableProps {
   initialLeads: Lead[];
+  selectedLeads: string[]; // Added selectedLeads prop
+  setSelectedLeads: Dispatch<SetStateAction<string[]>>; // Added setSelectedLeads for managing state
+  totalRecords: number; // Added totalRecords prop
+  onSortChange: (column: keyof Lead) => void; // This handles the sort state
+  sortState: SortState; // Sort state passed as prop
 }
 
 export interface SortState {
