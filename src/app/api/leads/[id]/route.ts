@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 
-// Corrected PATCH handler
+// PATCH handler
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = await createRouteHandlerClient()
 
-    const { id } = params  // No need for Promise.resolve here
+    const { id } = params  // Correctly access id from params
     const updates = await request.json()
 
     const { data, error } = await supabase
@@ -27,12 +27,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-// Corrected DELETE handler
+// DELETE handler
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = await createRouteHandlerClient()
 
-    const { id } = params  // No need for Promise.resolve here
+    const { id } = params  // Correctly access id from params
 
     const { error } = await supabase
       .from('leads')
