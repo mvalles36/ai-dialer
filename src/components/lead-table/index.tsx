@@ -20,7 +20,6 @@ import { leadsService } from "@/lib/services/leads";
 import { supabase } from "@/lib/supabase/client";
 import debounce from "lodash/debounce";
 
-// Import components and hooks
 import { CSVPreviewDialog } from "./csv-preview-dialog";
 import { LeadFormDialog } from "./lead-form-dialog";
 import { LeadTableHeader } from "./table-header";
@@ -157,7 +156,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   };
 
   const handleAddLead = async (data: Partial<Lead>) => {
-    // Validate required fields
     if (!data.company_name || !data.contact_name || !data.phone || !data.email) {
       toast({
         title: "Error",
@@ -167,18 +165,18 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
       return;
     }
 
-    // Create the lead data object with all required fields and defaults for optional fields
-    const leadData = {
+    // Create the lead data object with type safety
+    const leadData: Required<Omit<Lead, 'id' | 'created_at' | 'updated_at'>> = {
       company_name: data.company_name,
       contact_name: data.contact_name,
       phone: data.phone,
       email: data.email,
-      status: data.status ?? "pending" as const,
+      status: data.status ?? "pending",
       call_attempts: data.call_attempts ?? 0,
       last_called: data.last_called ?? null,
       notes: data.notes ?? "",
       source: data.source ?? "manual",
-    } satisfies Omit<Lead, 'id' | 'created_at' | 'updated_at'>;
+    };
 
     const { data: newLead, error } = await leadsService.createLead(leadData);
 
