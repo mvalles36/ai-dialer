@@ -99,7 +99,7 @@ export function LeadFormDialog({
           </div>
           <div className="grid gap-2">
             <Select
-              value={formData.timezone || "America/Los_Angeles"}
+              value={formData.timezone || "America/Chicago"}
               onValueChange={(value) => setFormData({ ...formData, timezone: value })}
             >
               <SelectTrigger>
