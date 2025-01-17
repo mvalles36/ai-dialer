@@ -18,6 +18,9 @@ export interface Database {
           updated_at: string
           notes?: string;
           source?: string;
+          timezone: data.timezone ?? "", // Provide a default value
+          cal_booking_uid: data.cal_booking_uid ?? null, // Provide a default value
+          follow_up_email_sent: data.follow_up_email_sent ?? false, // Provide a default value
         }
         Insert: Omit<Database['public']['Tables']['leads']['Row'], 'id'>
         Update: Partial<Database['public']['Tables']['leads']['Row']>
