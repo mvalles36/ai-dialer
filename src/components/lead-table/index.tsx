@@ -166,17 +166,20 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     }
 
     // Create the lead data object with type safety
-    const leadData: Required<Omit<Lead, 'id' | 'created_at' | 'updated_at'>> = {
-      company_name: data.company_name,
-      contact_name: data.contact_name,
-      phone: data.phone,
-      email: data.email,
-      status: data.status ?? "pending",
-      call_attempts: data.call_attempts ?? 0,
-      last_called_at: data.last_called_at ?? null,
-      notes: data.notes ?? "",
-      source: data.source ?? "manual",
-    };
+  const leadData: Required<Omit<Lead, 'id' | 'created_at' | 'updated_at'>> = {
+  company_name: data.company_name,
+  contact_name: data.contact_name,
+  phone: data.phone,
+  email: data.email,
+  status: data.status ?? 'pending',
+  call_attempts: data.call_attempts ?? 0,
+  last_called_at: data.last_called_at ?? null,
+  notes: data.notes ?? '',
+  source: data.source ?? 'manual',
+  timezone: data.timezone ?? '', // Add the missing 'timezone' field
+  cal_booking_uid: data.cal_booking_uid ?? null, // Add the missing 'cal_booking_uid' field
+  follow_up_email_sent: data.follow_up_email_sent ?? false, // Add the missing 'follow_up_email_sent' field
+};
 
     const { data: newLead, error } = await leadsService.createLead(leadData);
 
