@@ -1,1 +1,1 @@
-Hi, is this {{lead_contact_name}} from {{lead_company_name}}?
+Hi, is this {{lead_contact_name}}?
