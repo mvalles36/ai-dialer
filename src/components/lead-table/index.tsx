@@ -287,178 +287,52 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   const handleBulkStatusUpdate = async (status: Lead["status"]) => {
     const { success, data, error } = await leadsService.updateLeadStatus(selectedLeads, status);
 
-    if (!success || error) {
-      console.error("Error updating leads:", error);
+    if (!success || !data) {
       toast({
         title: "Error",
-        description: "Failed to update leads. Please try again.",
+        description: "Failed to update lead statuses. Please try again.",
         variant: "destructive",
       });
     } else {
       toast({
         title: "Success",
-        description: `Successfully updated ${selectedLeads.length} leads to ${status}.`,
+        description: `Successfully updated ${selectedLeads.length} lead statuses.`,
         variant: "success",
       });
-
-      // Update local state with the returned data
-      setRawLeads(prevLeads => 
-        prevLeads.map(lead => {
-          const updatedLead = data?.find(d => d.id === lead.id);
-          return updatedLead ? { ...lead, ...updatedLead } : lead;
-        })
-      );
       setSelectedLeads([]);
+      fetchLeads();
     }
   };
 
-  const toggleLead = (id: string) => {
-    setSelectedLeads((prev) =>
-      prev.includes(id)
-        ? prev.filter((leadId) => leadId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedLeads(checked ? sortedLeads.map((lead) => lead.id) : []);
-  };
-
-  const handleKeyDown = async (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    id: string,
-    field: keyof Lead,
-    value: string
-  ) => {
-    if (e.key === "Escape") {
-      setEditingCell(null);
-      return;
-    }
-
-    if (e.key === "Enter") {
-      try {
-        const success = await handleUpdateLead(id, { [field]: value });
-        if (success) {
-          setEditingCell(null);
-        }
-      } catch (error) {
-        toast({
-          title: "Error updating lead",
-          description: error instanceof Error ? error.message : "An error occurred",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
-
-    if (e.key === "Tab") {
-      e.preventDefault();
-      try {
-        // Calculate next cell position
-        const editableFields = Object.keys(FIELD_MAPPINGS).filter(
-          (f) => !NON_EDITABLE_FIELDS.includes(f)
-        );
-        const currentLeadIndex = sortedLeads.findIndex((l) => l.id === id);
-        const currentFieldIndex = editableFields.indexOf(field);
-        const nextFieldIndex = e.shiftKey ? currentFieldIndex - 1 : currentFieldIndex + 1;
-
-        let nextCell: EditingCell | null = null;
-
-        if (e.shiftKey) {
-          // Going backwards
-          if (nextFieldIndex >= 0) {
-            // Move to previous field in same row
-            nextCell = { id, field: editableFields[nextFieldIndex] as keyof Lead };
-          } else if (currentLeadIndex > 0) {
-            // Move to last field of previous row
-            nextCell = {
-              id: sortedLeads[currentLeadIndex - 1].id,
-              field: editableFields[editableFields.length - 1] as keyof Lead
-            };
-          }
-        } else {
-          // Going forwards
-          if (nextFieldIndex < editableFields.length) {
-            // Move to next field in same row
-            nextCell = { id, field: editableFields[nextFieldIndex] as keyof Lead };
-          } else if (currentLeadIndex < sortedLeads.length - 1) {
-            // Move to first field of next row
-            nextCell = {
-              id: sortedLeads[currentLeadIndex + 1].id,
-              field: editableFields[0] as keyof Lead
-            };
-          }
-        }
-
-        // If we have a next cell, move to it
-        if (nextCell) {
-          // Use requestAnimationFrame to ensure DOM updates are complete
-          requestAnimationFrame(() => {
-            setEditingCell(nextCell);
-          });
-        }
-      } catch (error) {
-        toast({
-          title: "Error moving to next cell",
-          description: error instanceof Error ? error.message : "An error occurred",
-          variant: "destructive",
-        });
-      }
-    }
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedLeads(e.target.checked ? rawLeads.map((lead) => lead.id) : []);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2">
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            className="hidden"
-            ref={fileInputRef}
-          />
-          <Button variant="outline" onClick={handleManualRefresh}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => setIsAddingLead(true)}>
-            Add Lead
-          </Button>
-          <Button onClick={() => fileInputRef.current?.click()}>
-            Import CSV
-          </Button>
-        </div>
+    <div className="overflow-hidden">
+      <div className="flex justify-between items-center py-4">
+        <Button onClick={handleManualRefresh} variant="outline">
+          <RefreshCw className="mr-2" /> Refresh Leads
+        </Button>
         {selectedLeads.length > 0 && (
-          <div className="flex gap-2">
+          <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="destructive">
-                  {selectedLeads.length === 1 ? 'Actions' : 'Bulk Actions'}
-                </Button>
+                <Button variant="outline">Bulk Actions</Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("pending")}>
-                  Set to Pending
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Manage Selected</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("in_progress")}>
+                  Set to In Progress
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("calling")}>
-                  Set to Calling
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("completed")}>
+                  Set to Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("no_answer")}>
-                  Set to No Answer
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("scheduled")}>
-                  Set to Scheduled
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("not_interested")}>
-                  Set to Not Interested
+                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("archived")}>
+                  Set to Archived
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="text-red-600"
-                >
+                <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
                   Delete Selected
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -467,91 +341,59 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
         )}
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <LeadTableHeader
-            onSelectAll={handleSelectAll}
-            allSelected={
-              sortedLeads.length > 0 &&
-              sortedLeads.every((lead) => selectedLeads.includes(lead.id))
-            }
-            sortState={sortState}
-            onSort={handleSort}
-            hasLeads={sortedLeads.length > 0}
-          />
-          <LeadTableBody
-            leads={sortedLeads}
-            selectedLeads={selectedLeads}
-            editingCell={editingCell}
-            onToggleLead={toggleLead}
-            onEdit={async (id, field, value) => {
-              const success = await handleUpdateLead(id, { [field]: value });
-              if (success) {
-                setEditingCell(null);
-              }
-            }}
-            onStartEdit={(id, field) => {
-              if (id && field) {
-                setEditingCell({ id, field });
-              } else {
-                setEditingCell(null);
-              }
-            }}
-            onKeyDown={handleKeyDown}
-            setEditingCell={setEditingCell}
-          />
-        </Table>
-      </div>
+      <Table>
+        <LeadTableHeader
+          sortState={sortState}
+          handleSort={handleSort}
+          onSelectAll={handleSelectAll}
+        />
+        <LeadTableBody
+          leads={sortedLeads}
+          editingCell={editingCell}
+          toggleLead={toggleLead}
+          handleKeyDown={handleKeyDown}
+        />
+      </Table>
+
       <Pagination
         currentPage={currentPage}
-        totalPages={Math.ceil(totalRecords / pageSize)}
-        pageSize={pageSize}
         totalRecords={totalRecords}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setCurrentPage(1); // Reset to first page when changing page size
-        }}
-      />
-      {selectedLeads.length > 0 && (
-        <div className="bg-muted mt-4 p-2 rounded-md flex items-center justify-between">
-          <span className="text-sm font-medium">{selectedLeads.length} record{selectedLeads.length === 1 ? '' : 's'} selected</span>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedLeads([])}>Clear selection</Button>
-        </div>
-      )}
-      <LeadFormDialog
-        open={isAddingLead}
-        onOpenChange={setIsAddingLead}
-        onSubmit={handleAddLead}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        setCurrentPage={setCurrentPage}
       />
 
-      <CSVPreviewDialog
-        previewData={csvPreviewData}
-        onConfirm={handleCSVImport}
-        onCancel={() => setShowCSVPreview(false)}
-        open={showCSVPreview}
-      />
-
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Leads</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete{" "}
-              {selectedLeads.length} selected lead(s).
+              Are you sure you want to delete the selected leads? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteLeads}>
-              Delete
+              Confirm Deletion
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LeadFormDialog
+        isOpen={isAddingLead}
+        onClose={() => setIsAddingLead(false)}
+        onSave={handleAddLead}
+      />
+
+      <CSVPreviewDialog
+        previewData={csvPreviewData}
+        showPreview={showCSVPreview}
+        onClose={() => setShowCSVPreview(false)}
+        onImport={handleCSVImport}
+      />
     </div>
   );
 }
