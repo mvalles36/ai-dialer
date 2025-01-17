@@ -173,7 +173,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
       email: data.email,
       status: data.status ?? "pending",
       call_attempts: data.call_attempts ?? 0,
-      last_called: data.last_called ?? null,
+      last_called_at: data.last_called_at ?? null,
       notes: data.notes ?? "",
       source: data.source ?? "manual",
     };
