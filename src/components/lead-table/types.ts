@@ -6,6 +6,7 @@ export interface CSVPreviewData {
   phone: string;
   email: string;
   timezone?: string;
+  status?: "untouched" | "error" | "pending" | "calling" | "no_answer" | "scheduled" | "not_interested";
 }
 
 export interface CSVDialogProps {
@@ -35,4 +36,5 @@ export interface LeadFormState {
   phone?: string;
   email?: string;
   timezone?: string;
+  status?: "untouched" | "error" | "pending" | "calling" | "no_answer" | "scheduled" | "not_interested";
 }
