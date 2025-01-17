@@ -20,7 +20,7 @@ import { leadsService } from "@/lib/services/leads";
 import { supabase } from "@/lib/supabase/client";
 import debounce from "lodash/debounce";
 
-// Import our new components and hooks
+// Import components and hooks
 import { CSVPreviewDialog } from "./csv-preview-dialog";
 import { LeadFormDialog } from "./lead-form-dialog";
 import { LeadTableHeader } from "./table-header";
@@ -50,7 +50,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   const [totalRecords, setTotalRecords] = useState(initialLeads.length);
   const { toast } = useToast();
 
-  // Initialize our custom hooks
+  // Initialize hooks
   const { sortState, handleSort, getSortedLeads } = useLeadSort();
   const sortedLeads = getSortedLeads(rawLeads);
   const { csvPreviewData, showCSVPreview, fileInputRef, handleFileUpload, handleCSVImport, setShowCSVPreview } = useCSVImport(() => fetchLeads(false));
@@ -64,7 +64,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
       forceRefresh
     });
 
-    // Only skip fetch if we're not forcing a refresh and we're on page 1 with initial data
     if (!forceRefresh && currentPage === 1 && rawLeads === initialLeads && !sortState.column) {
       console.log('Skipping fetch - using initial data');
       return;
@@ -111,12 +110,10 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     }
   };
 
-  // Only fetch when pagination, sorting changes
   useEffect(() => {
     fetchLeads(false, false);
   }, [currentPage, pageSize, sortState]);
 
-  // Memoize the debounced update handler
   const handleDatabaseChange = useCallback(
     debounce(async () => {
       const { data: updatedLeads, error, count } = await leadsService.getLeads({
@@ -150,7 +147,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   );
 
   useEffect(() => {
-    // Subscribe to changes on the leads table
     const subscription = supabase
       .channel('leads-table-changes')
       .on(
@@ -182,7 +178,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
       )
       .subscribe();
 
-    // Cleanup subscription and debounced handler on component unmount
     return () => {
       subscription.unsubscribe();
       handleDatabaseChange.cancel();
@@ -190,7 +185,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
   }, [handleDatabaseChange]);
 
   const handleManualRefresh = () => {
-    // Force refresh when manually triggered
     fetchLeads(true, true);
   };
 
@@ -206,14 +200,11 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
       return false;
     }
     
-    // Update the local state with the new data
     setRawLeads(prevLeads => 
       prevLeads.map(lead => lead.id === id ? {
-        ...lead,  // Keep existing properties
-        ...data,  // Update with new data
-        // Preserve any properties that might be undefined in the response
+        ...lead, 
+        ...data,
         ...Object.fromEntries(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           Object.entries(data).filter(([_, v]) => v !== undefined)
         )
       } : lead)
@@ -280,7 +271,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
         variant: "success",
       });
       setIsAddingLead(false);
-      fetchLeads(false, true);  // Set forceRefresh to true
+      fetchLeads(false, true);
     }
   };
 
@@ -328,12 +319,8 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                 <DropdownMenuItem onClick={() => handleBulkStatusUpdate("completed")}>
                   Set to Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkStatusUpdate("archived")}>
-                  Set to Archived
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-                  Delete Selected
+                  Delete Selected Leads
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -343,24 +330,38 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
 
       <Table>
         <LeadTableHeader
+          selectedLeads={selectedLeads}
+          handleSelectAll={handleSelectAll}
           sortState={sortState}
-          handleSort={handleSort}
-          onSelectAll={handleSelectAll}
+          onSort={handleSort}
         />
         <LeadTableBody
           leads={sortedLeads}
-          editingCell={editingCell}
-          toggleLead={toggleLead}
-          handleKeyDown={handleKeyDown}
+          selectedLeads={selectedLeads}
+          setSelectedLeads={setSelectedLeads}
+          setEditingCell={setEditingCell}
         />
       </Table>
 
       <Pagination
         currentPage={currentPage}
         totalRecords={totalRecords}
+        onPageChange={setCurrentPage}
         pageSize={pageSize}
-        setPageSize={setPageSize}
-        setCurrentPage={setCurrentPage}
+        onPageSizeChange={setPageSize}
+      />
+
+      <CSVPreviewDialog
+        show={showCSVPreview}
+        onClose={() => setShowCSVPreview(false)}
+        previewData={csvPreviewData}
+        onConfirm={handleCSVImport}
+      />
+
+      <LeadFormDialog
+        isOpen={isAddingLead}
+        onClose={() => setIsAddingLead(false)}
+        onSubmit={handleAddLead}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -368,32 +369,22 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Leads</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the selected leads? This action cannot be undone.
+              Are you sure you want to delete the selected leads?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteLeads}>
+            <AlertDialogAction
+              onClick={handleDeleteLeads}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Confirm Deletion
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <LeadFormDialog
-        isOpen={isAddingLead}
-        onClose={() => setIsAddingLead(false)}
-        onSave={handleAddLead}
-      />
-
-      <CSVPreviewDialog
-        previewData={csvPreviewData}
-        showPreview={showCSVPreview}
-        onClose={() => setShowCSVPreview(false)}
-        onImport={handleCSVImport}
-      />
     </div>
   );
 }
