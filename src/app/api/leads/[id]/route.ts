@@ -1,19 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { LeadsService } from '@/lib/services/leads'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const serviceClient = createServiceClient()
 const leadsService = new LeadsService(serviceClient)
 
-type Props = {
-  params: {
-    id: string
-  }
-}
-
 export async function DELETE(
-  request: Request,
-  context: Props
+  req: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
     const { id } = context.params
