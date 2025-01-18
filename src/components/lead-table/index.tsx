@@ -318,18 +318,31 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
 
       <Pagination
         currentPage={currentPage}
-        totalRecords={totalRecords}
         pageSize={pageSize}
+        totalRecords={totalRecords}
         setCurrentPage={setCurrentPage}
         setPageSize={setPageSize}
+      />
+
+      <CSVPreviewDialog
+        csvPreviewData={csvPreviewData}
+        showCSVPreview={showCSVPreview}
+        setShowCSVPreview={setShowCSVPreview}
+        handleCSVImport={handleCSVImport}
+      />
+
+      <LeadFormDialog
+        isOpen={isAddingLead}
+        setIsOpen={setIsAddingLead}
+        handleAddLead={handleAddLead}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Leads</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedLeads.length} selected leads.
+              Are you sure you want to delete {selectedLeads.length} leads? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -338,19 +351,6 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <CSVPreviewDialog
-        isOpen={showCSVPreview}
-        onClose={() => setShowCSVPreview(false)}
-        csvData={csvPreviewData}
-        onImport={handleCSVImport}
-      />
-
-      <LeadFormDialog
-        isOpen={isAddingLead}
-        onClose={() => setIsAddingLead(false)}
-        onSave={handleAddLead}
-      />
     </div>
   );
 }
