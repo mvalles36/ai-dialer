@@ -1,0 +1,12 @@
+{
+  "functions": [
+    {
+      "name": "call-automation",
+      "verify_jwt": false,
+      "schedule": {
+        "cron": "*/5 * * * *",
+        "timezone": "UTC"
+      }
+    }
+  ]
+}
